@@ -27,9 +27,21 @@ Guiding principle: the Bitcoin features should be things **only the editor can d
 
 ## 1. Versioning: the BIG feature
 
-Save projects progressively, git-style, as in Bitcoin-Writer (bWriter). A "git file" is a **magnet-style link** that lets someone open, edit and fork a project's history.
+Save projects progressively, git-style, as in Bitcoin-Writer (bWriter). A "git file" is a **magnet-style link** that lets someone open, edit and fork a project's history. See the Versioning section below.
 
-The design is still being worked out; see the Versioning section below.
+- [x] **Phase 1: local history (2026-09-23), in `Compositor/Versioning/`**
+  - Every save becomes a version in a content-addressed store at `~/Library/Containers/com.b0ase.bcompositor/Data/Library/Application Support/bCompositor/History`.
+    - Files are named by SHA-256: `objects/`, plus `refs/<documentID>` and `previews/`.
+    - Unchanged layers are stored once, across versions and across projects.
+    - A save that changed nothing creates no version.
+    - Commits and trees are hash-checked every time they are read.
+  - **File ▸ Version History…** lists versions with previews. Restoring a version is one undoable edit, and saving afterwards adds a new version on top, so history is never rewritten.
+  - The upstream code is touched in two places: the menu item (`CompositorApp.swift`) and one line after a successful save (`ProjectController.saveCurrent`).
+  - History is keyed by the manifest's `documentID`, so renames, moves and Save As keep one history. It lives outside the `.comp`, because every save rewrites the package atomically.
+- [ ] Phase 2: optional version messages, branches (fork = new ref), and a layer-level diff view between versions
+- [ ] Phase 3: sync to our own hash-addressed storage (upload missing objects; fetch and verify by hash)
+- [ ] Phase 4: on-chain UTXO chain of proof (a commit hash plus the author's signature per save) and the `bcomp:` link
+- [ ] Clean up objects no version refers to (e.g. after a project's history is deleted)
 
 ## 2. Provenance / proof of authorship
 
