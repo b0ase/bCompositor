@@ -7,12 +7,15 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP=Compositor
-REPO=robbietilton/Compositor
-WORK="$HOME/Library/Caches/CompositorRelease"
+PROJECT=Compositor
+APP=bCompositor
+REPO=b0ase/bCompositor
+# The Sparkle key lives under its own keychain account so it never collides with another app's key.
+SPARKLE_ACCOUNT=bcompositor
+WORK="$HOME/Library/Caches/bCompositorRelease"
 SIGN_UPDATE="$WORK/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update"
 
-settings=$(xcodebuild -project "$PROJECT_DIR/$APP.xcodeproj" -scheme "$APP" -configuration Release -showBuildSettings 2>/dev/null)
+settings=$(xcodebuild -project "$PROJECT_DIR/$PROJECT.xcodeproj" -scheme "$PROJECT" -configuration Release -showBuildSettings 2>/dev/null)
 VERSION=$(print -r -- "$settings" | awk -F' = ' '/ MARKETING_VERSION = /{print $2; exit}')
 BUILD=$(print -r -- "$settings" | awk -F' = ' '/ CURRENT_PROJECT_VERSION = /{print $2; exit}')
 MINIMUM=$(print -r -- "$settings" | awk -F' = ' '/ MACOSX_DEPLOYMENT_TARGET = /{print $2; exit}')
@@ -26,13 +29,13 @@ if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
 fi
 
 echo "==> $APP $VERSION ($BUILD)"
-# Every release names its file Compositor.dmg, so …/releases/latest/download/Compositor.dmg always works.
+# Every release names its file bCompositor.dmg, so …/releases/latest/download/bCompositor.dmg always works.
 mkdir -p "$WORK/publish"
 DMG="$WORK/publish/$APP.dmg"
 cp "$SOURCE" "$DMG"
 
 echo "==> Signing the update for Sparkle"
-signature=$("$SIGN_UPDATE" "$DMG")
+signature=$("$SIGN_UPDATE" --account "$SPARKLE_ACCOUNT" "$DMG")
 
 echo "==> Creating GitHub Release $TAG"
 gh release create "$TAG" "$DMG" --repo "$REPO" --title "$APP $VERSION" --notes "${RELEASE_NOTES:-$APP $VERSION}"

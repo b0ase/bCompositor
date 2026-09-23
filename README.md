@@ -1,3 +1,22 @@
+# bCompositor
+
+bCompositor is a Bitcoin (BSV) edition of [Compositor](https://github.com/robbietilton/Compositor), the free, open-source Photoshop alternative for Mac by Wonder Assembly.
+
+It keeps every Compositor feature and pulls in upstream updates. It adds Bitcoin features that only an image editor can offer:
+
+- **Git-style project history:** versions are saved on-chain, and a `bcomp:` link opens, forks or co-edits a project
+- **Proof of authorship:** a signed, timestamped record of how an image was made
+- **Ordinal export**
+- **Layer lineage with royalties**
+
+See [ROADMAP.md](ROADMAP.md).
+
+bCompositor opens Compositor projects (`.comp`) and can be installed alongside Compositor.
+
+---
+
+*The original Compositor README follows.*
+
 # Compositor
 
 Adobe Photoshop costs too much and tools like GIMP don’t feel familiar enough for me to stay in flow. That’s why I built Compositor.
@@ -70,12 +89,12 @@ Open `Compositor.xcodeproj` and run the **Compositor** scheme.
 
 ## Releasing
 
-`scripts/release.sh` builds a Release version, signs it with Developer ID, notarizes and staples it, and packages it into `dist/Compositor-<version>.dmg`.
+`scripts/release.sh` builds a Release version, signs it with Developer ID, notarizes and staples it, and packages it into `dist/bCompositor-<version>.dmg`. `scripts/publish.sh` then creates the GitHub Release and updates `appcast.xml`.
 
 It needs, all kept outside this repository:
 
 - a **Developer ID Application** certificate in the login keychain
-- notarization credentials saved with `xcrun notarytool store-credentials "compositor-notary" …`
+- notarization credentials saved with `xcrun notarytool store-credentials "bcompositor-notary" …`
 - [`create-dmg`](https://github.com/create-dmg/create-dmg) (`brew install create-dmg`)
 
 ## License
