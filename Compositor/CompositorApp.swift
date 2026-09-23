@@ -64,6 +64,8 @@ struct CompositorApp: App {
                     Button("Save As…") { Task { await applicationDelegate.projects.save(asNew: true) } }
                         .configuredKeyboardShortcut("s", modifiers: [.command, .shift])
                         .disabled(session.document == nil || !applicationDelegate.projects.canStart)
+                    Button("Version History…") { Task { await applicationDelegate.projects.showVersionHistory() } }
+                        .disabled(session.document == nil || !applicationDelegate.projects.canStart)
                     Divider()
                     Button("Export PNG…") { Task { await applicationDelegate.projects.exportPNG() } }
                         .configuredKeyboardShortcut("e", modifiers: [.command, .shift])

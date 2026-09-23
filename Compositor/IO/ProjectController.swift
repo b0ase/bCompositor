@@ -173,6 +173,7 @@ final class ProjectController {
             session.projectURL = destination
             session.history.markSaved()
             saveGeneration += 1
+            await recordVersion(of: snapshot, savedAt: destination)
             NSDocumentController.shared.noteNewRecentDocumentURL(destination)
             return true
         } catch {
