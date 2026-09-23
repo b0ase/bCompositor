@@ -1,25 +1,27 @@
 #!/bin/zsh
-# Builds a signed, notarized Compositor DMG that opens without warnings on any Mac.
+# Builds a signed, notarized bCompositor DMG that opens without warnings on any Mac.
 #
 # Needs, all kept out of this repository:
 #   - a "Developer ID Application" certificate in the login keychain
 #   - notarization credentials saved once with:
-#       xcrun notarytool store-credentials "compositor-notary" --apple-id "…" --team-id 3E4X3B9Z9T
+#       xcrun notarytool store-credentials "bcompositor-notary" --apple-id "…" --team-id ZQ4NX9NJ89
 #   - create-dmg (brew install create-dmg)
 # The DMG window background is scripts/dmg/dmg-bg.jpg (600 × 380, the window's exact size) plus
 # dmg-bg-retina.jpg (1200 × 760) for Retina displays.
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP=Compositor
-TEAM=3E4X3B9Z9T
+# The Xcode project, scheme and Swift module keep upstream's name so merges stay clean; the product is bCompositor.app.
+PROJECT=Compositor
+APP=bCompositor
+TEAM=ZQ4NX9NJ89
 IDENTITY="Developer ID Application"
-NOTARY_PROFILE=compositor-notary
+NOTARY_PROFILE=bcompositor-notary
 # Built outside Dropbox: the extended attributes it adds to files make code signing fail.
-WORK="$HOME/Library/Caches/CompositorRelease"
+WORK="$HOME/Library/Caches/bCompositorRelease"
 DIST="$PROJECT_DIR/dist"
 
-settings=$(xcodebuild -project "$PROJECT_DIR/$APP.xcodeproj" -scheme "$APP" -configuration Release -showBuildSettings 2>/dev/null)
+settings=$(xcodebuild -project "$PROJECT_DIR/$PROJECT.xcodeproj" -scheme "$PROJECT" -configuration Release -showBuildSettings 2>/dev/null)
 VERSION=$(print -r -- "$settings" | awk -F' = ' '/ MARKETING_VERSION = /{print $2; exit}')
 BUILD=$(print -r -- "$settings" | awk -F' = ' '/ CURRENT_PROJECT_VERSION = /{print $2; exit}')
 echo "==> $APP $VERSION ($BUILD)"
@@ -29,14 +31,14 @@ mkdir -p "$WORK" "$DIST"
 
 echo "==> Archiving a Release build"
 xcodebuild archive -quiet \
-  -project "$PROJECT_DIR/$APP.xcodeproj" -scheme "$APP" -configuration Release \
+  -project "$PROJECT_DIR/$PROJECT.xcodeproj" -scheme "$PROJECT" -configuration Release \
   -destination "generic/platform=macOS" \
-  -archivePath "$WORK/$APP.xcarchive" -derivedDataPath "$WORK/DerivedData" \
+  -archivePath "$WORK/$PROJECT.xcarchive" -derivedDataPath "$WORK/DerivedData" \
   CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM="$TEAM"
 
 echo "==> Exporting, signed with Developer ID"
 xcodebuild -exportArchive -quiet \
-  -archivePath "$WORK/$APP.xcarchive" \
+  -archivePath "$WORK/$PROJECT.xcarchive" \
   -exportOptionsPlist "$PROJECT_DIR/scripts/ExportOptions.plist" \
   -exportPath "$WORK/export"
 APP_PATH="$WORK/export/$APP.app"
