@@ -22,3 +22,7 @@ xcuserdata/
 # Claude Code settings personal to this machine
 .claude/settings.local.json
 BUILD_PLAN.md
+
+# Sparkle EdDSA private key (update signing). Local backup only — never commit.
+bcompositor-sparkle-key.txt
+*.sparkle-key*
