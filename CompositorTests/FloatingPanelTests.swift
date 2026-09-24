@@ -144,4 +144,18 @@ struct FloatingPanelTests {
         controller.close()
     }
 
+    /// AppKit nudges a hidden window sideways when it is ordered front on a display other than the primary one.
+    @Test(.enabled(if: NSScreen.screens.count > 1))
+    func panelReopensWhereItWasLeftOnASecondDisplay() throws {
+        let controller = FloatingPanelController(name: "testSecondDisplayPosition")
+        let screen = try #require(NSScreen.screens.dropFirst().first)
+        controller.show(title: "Test", content: Text("Panel").frame(width: 538, height: 300))
+        let panel = try #require(NSApp.windows.first { $0.identifier == controller.identifier })
+        let spot = NSPoint(x: screen.visibleFrame.minX + 40, y: screen.visibleFrame.maxY - 40)
+        panel.setFrameTopLeftPoint(spot)
+        controller.close()
+        controller.show(title: "Test", content: Text("Panel").frame(width: 538, height: 300))
+        #expect(NSPoint(x: panel.frame.minX, y: panel.frame.maxY) == spot)
+        controller.close()
+    }
 }

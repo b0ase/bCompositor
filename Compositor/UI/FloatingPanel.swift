@@ -50,6 +50,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
             host.autoresizingMask = [.width, .height]
         }
         panel.contentView = host
+        var target: NSPoint?
         if placement == .dockedToMainWindowRight {
             applyDockedFrame(panel: panel)
             installFrameObserver(for: panel)
@@ -57,10 +58,10 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
             removeFrameObserver()
             let size = host.fittingSize
             if size.width > 0, size.height > 0 { panel.setContentSize(size) }
-            if wasVisible {
-                panel.setFrameTopLeftPoint(topLeft) // Content changes must not shift the panel.
-            } else if let saved = Self.positions[name] {
-                panel.setFrameTopLeftPoint(saved)
+            // Content changes must not shift the panel.
+            target = wasVisible ? topLeft : Self.positions[name]
+            if let target {
+                panel.setFrameTopLeftPoint(target)
             } else if let center = (NSApp.mainWindow ?? NSApp.keyWindow).flatMap(Self.canvasCenter) {
                 let size = panel.frame.size
                 panel.setFrameOrigin(NSPoint(x: center.x - size.width / 2, y: center.y - size.height / 2))
@@ -69,6 +70,9 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
             }
         }
         panel.makeKeyAndOrderFront(nil)
+        // Ordering a hidden window front on a display other than the primary one nudges it sideways (194 points on
+        // macOS 26), so a panel left on a second display would creep across it each time it reopened.
+        if let target, NSPoint(x: panel.frame.minX, y: panel.frame.maxY) != target { panel.setFrameTopLeftPoint(target) }
         remember(panel)
     }
 
