@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bCompositor — the Mac image editor that remembers every version</title>
+<meta name="description" content="A free, open-source Photoshop alternative for Mac with git-style history of every save, and proof on Bitcoin of who made what. For macOS 26.5 and later.">
+<meta name="theme-color" content="#0d0c10">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="bCompositor — the Mac image editor that remembers every version">
+<meta property="og:description" content="Free, open-source Photoshop alternative for Mac. Git-style history of every save, with provenance on Bitcoin.">
+<meta property="og:image" content="https://bcompositor.vercel.app/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --radius: 10px;
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", monospace;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --background: oklch(0.155 0.008 290);
+  --surface: oklch(0.19 0.009 290);
+  --surface-2: oklch(0.225 0.01 290);
+  --foreground: oklch(0.96 0.004 290);
+  --muted: oklch(0.70 0.012 290);
+  --subtle: oklch(0.56 0.012 290);
+  --border: oklch(1 0 0 / 0.08);
+  --border-strong: oklch(1 0 0 / 0.14);
+  --primary: oklch(0.76 0.16 62);           /* Bitcoin orange */
+  --primary-soft: oklch(0.76 0.16 62 / 0.14);
+  --primary-foreground: oklch(0.18 0.03 60);
+  --ring: oklch(0.76 0.16 62 / 0.6);
+  --shadow-lg: 0 24px 64px -16px oklch(0 0 0 / 0.6), 0 8px 24px -8px oklch(0 0 0 / 0.4);
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--background); color: var(--foreground);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+a { color: inherit; }
+img { display: block; max-width: 100%; }
+.wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
+
+/* ---------- Nav ---------- */
+.nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(140%) blur(12px);
+  background: oklch(0.155 0.008 290 / 0.72); border-bottom: 1px solid var(--border); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 600; letter-spacing: -0.01em; }
+.brand img { width: 28px; height: 28px; }
+.nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; }
+.nav-links a { text-decoration: none; color: var(--muted); transition: color 160ms var(--ease-out); }
+.nav-links a:hover { color: var(--foreground); }
+
+/* ---------- Buttons ---------- */
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: var(--radius);
+  font: 500 15px/1 var(--font-sans); text-decoration: none; border: 1px solid transparent;
+  transition: background 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible, .nav-links a:focus-visible, .brand:focus-visible, summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 6px; }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); }
+.btn-primary:hover { background: oklch(0.80 0.15 64); }
+.btn-ghost { border-color: var(--border-strong); color: var(--foreground); }
+.btn-ghost:hover { background: oklch(1 0 0 / 0.05); }
+.btn svg { width: 18px; height: 18px; }
+
+/* ---------- Hero ---------- */
+.hero { position: relative; padding: 96px 0 64px; overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: -20% -10% auto; height: 620px; pointer-events: none;
+  background: radial-gradient(50% 60% at 50% 0%, oklch(0.76 0.16 62 / 0.16), transparent 70%); }
+.hero .wrap { position: relative; text-align: center; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--border-strong);
+  border-radius: 999px; font-size: 13px; color: var(--muted); }
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
+h1 { margin: 24px auto 0; max-width: 16ch; font-weight: 600; font-size: clamp(2.5rem, 6vw, 4.25rem); line-height: 1.02; letter-spacing: -0.035em; }
+h1 em { font-style: normal; color: var(--primary); }
+.lede { margin: 20px auto 0; max-width: 60ch; font-size: clamp(1.05rem, 2vw, 1.2rem); color: var(--muted); }
+.cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
+.fine { margin-top: 16px; font-size: 13px; color: var(--subtle); }
+
+/* ---------- Product visual: Version History sheet ---------- */
+.stage { margin: 64px auto 0; max-width: 880px; }
+.window { border: 1px solid var(--border-strong); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-lg); overflow: hidden; text-align: left; }
+.titlebar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.lights { display: flex; gap: 8px; }
+.lights i { width: 12px; height: 12px; border-radius: 50%; background: oklch(1 0 0 / 0.14); }
+.titlebar span { flex: 1; text-align: center; font-size: 13px; color: var(--muted); margin-right: 52px; }
+.sheet { padding: 24px; }
+.sheet h3 { margin: 0 0 16px; font-size: 20px; letter-spacing: -0.01em; }
+.versions { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.versions li { display: grid; grid-template-columns: 76px 1fr auto; align-items: center; gap: 14px; padding: 12px 14px; border-top: 1px solid var(--border); }
+.versions li:first-child { border-top: 0; }
+.versions li.selected { background: var(--primary-soft); }
+.thumb { width: 76px; height: 52px; border-radius: 6px; border: 1px solid var(--border); }
+.t1 { background: linear-gradient(160deg, oklch(0.32 0.06 250), oklch(0.62 0.13 60) 70%, oklch(0.85 0.09 80)); }
+.t2 { background: linear-gradient(160deg, oklch(0.30 0.06 250), oklch(0.58 0.12 55) 70%, oklch(0.80 0.08 75)); }
+.t3 { background: linear-gradient(160deg, oklch(0.28 0.05 250), oklch(0.50 0.09 50) 75%); }
+.t4 { background: linear-gradient(160deg, oklch(0.26 0.04 250), oklch(0.40 0.05 240)); }
+.v-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
+.badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); }
+.v-meta { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.hash { font: 12px var(--font-mono); color: var(--subtle); }
+.sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; }
+.sheet-foot p { margin: 0; font-size: 13px; color: var(--muted); max-width: 48ch; }
+.mini { height: 30px; padding: 0 14px; border-radius: 7px; font: 500 13px/30px var(--font-sans); background: var(--primary); color: var(--primary-foreground); white-space: nowrap; }
+.caption { margin-top: 14px; text-align: center; font-size: 13px; color: var(--subtle); }
+
+/* ---------- Sections ---------- */
+section.block { padding: 112px 0; border-top: 1px solid var(--border); }
+.eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); }
+h2 { margin: 16px 0 0; font-weight: 600; font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.1; letter-spacing: -0.03em; max-width: 22ch; }
+.section-lede { margin: 16px 0 0; max-width: 62ch; color: var(--muted); font-size: 1.075rem; }
+
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 56px; background: var(--border); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.feature { background: var(--background); padding: 32px 28px; }
+.status { display: inline-flex; align-items: center; gap: 6px; font: 500 12px/1 var(--font-mono); color: var(--muted); }
+.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--subtle); }
+.status.built { color: var(--primary); }
+.status.built::before { background: var(--primary); }
+.feature h3 { margin: 18px 0 8px; font-size: 19px; letter-spacing: -0.015em; }
+.feature p { margin: 0; color: var(--muted); font-size: 15px; }
+.feature code { font: 13px var(--font-mono); color: var(--foreground); background: oklch(1 0 0 / 0.06); padding: 1px 5px; border-radius: 4px; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+.link-card { border: 1px solid var(--border-strong); border-radius: 14px; background: var(--surface); padding: 24px; box-shadow: var(--shadow-lg); }
+.link-card .uri { font: 14px/1.7 var(--font-mono); word-break: break-all; color: var(--muted); }
+.link-card .uri b { color: var(--foreground); font-weight: 500; }
+.link-card .uri .k { color: var(--primary); }
+.parts { list-style: none; margin: 20px 0 0; padding: 20px 0 0; border-top: 1px solid var(--border); display: grid; gap: 12px; font-size: 14px; }
+.parts li { display: grid; grid-template-columns: 56px 1fr; gap: 12px; color: var(--muted); }
+.parts code { font: 13px var(--font-mono); color: var(--primary); }
+
+.editor-list { columns: 2; column-gap: 48px; margin: 40px 0 0; padding: 0; list-style: none; }
+.editor-list li { break-inside: avoid; padding: 12px 0; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 15px; }
+.editor-list li strong { color: var(--foreground); font-weight: 500; }
+.credit { margin-top: 32px; font-size: 14px; color: var(--subtle); }
+
+/* ---------- FAQ ---------- */
+.faq { margin-top: 40px; border-top: 1px solid var(--border); max-width: 760px; }
+details { border-bottom: 1px solid var(--border); }
+summary { cursor: pointer; list-style: none; padding: 20px 32px 20px 0; position: relative; font-weight: 500; font-size: 17px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; position: absolute; right: 4px; top: 18px; color: var(--muted); font-size: 20px; transition: transform 200ms var(--ease-out); }
+details[open] summary::after { transform: rotate(45deg); }
+details p { margin: 0 0 20px; color: var(--muted); max-width: 64ch; }
+
+/* ---------- Closing + footer ---------- */
+.closing { text-align: center; }
+.closing h2 { margin-inline: auto; }
+.closing .section-lede { margin-inline: auto; }
+footer { border-top: 1px solid var(--border); padding: 32px 0 48px; font-size: 13px; color: var(--subtle); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--foreground); }
+
+/* ---------- Motion ---------- */
+.rise { animation: rise 640ms var(--ease-out) both; }
+.rise.d1 { animation-delay: 60ms; } .rise.d2 { animation-delay: 120ms; } .rise.d3 { animation-delay: 180ms; } .rise.d4 { animation-delay: 260ms; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } * { transition: none !important; } }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .features { grid-template-columns: 1fr; }
+  .split { grid-template-columns: 1fr; gap: 40px; }
+  .editor-list { columns: 1; }
+  section.block { padding: 80px 0; }
+}
+@media (max-width: 560px) {
+  .nav-links .hide-sm { display: none; }
+  .hero { padding-top: 64px; }
+  .versions li { grid-template-columns: 56px 1fr; }
+  .thumb { width: 56px; height: 40px; }
+  .hash { display: none; }
+  .sheet { padding: 16px; }
+  .sheet-foot { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="/"><img src="/icon.png" alt="" width="28" height="28">bCompositor</a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="hide-sm" href="#history">History</a>
+      <a class="hide-sm" href="#links">Links</a>
+      <a class="hide-sm" href="#faq">FAQ</a>
+      <a href="https://github.com/b0ase/bCompositor">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="pill rise"><span class="dot"></span>Free for macOS 26.5 and later</span>
+      <h1 class="rise d1">The Mac image editor that <em>remembers every version.</em></h1>
+      <p class="lede rise d2">bCompositor is a free, open-source Photoshop alternative. Every save becomes a version you can go back to — and soon, a signed record on Bitcoin of who made what, and how.</p>
+      <div class="cta rise d3">
+        <a class="btn btn-primary" href="/download"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.89 1.15 9.14.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.39-3.66ZM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.76-.95 2.8 1.01.08 2.04-.51 2.67-1.28Z"/></svg>
+          Download for Mac
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/b0ase/bCompositor">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <p class="fine rise d3">Free and MIT-licensed · Signed and notarized by Apple · Updates itself</p>
+
+      <div class="stage rise d4">
+        <div class="window" role="img" aria-label="The Version History sheet in bCompositor, listing four saved versions of a project with previews, dates, sizes and hashes.">
+          <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div><span>Harbour at dusk.comp</span></div>
+          <div class="sheet">
+            <h3>Version History</h3>
+            <ul class="versions">
+              <li><div class="thumb t1"></div><div><div class="v-title">Version 4 <span class="badge">Latest</span></div><div class="v-meta">25 Sept 2026 at 10:42<br>6000 × 4000 · 14 layers</div></div><span class="hash">a3f9c21e</span></li>
+              <li class="selected"><div class="thumb t2"></div><div><div class="v-title">Version 3</div><div class="v-meta">25 Sept 2026 at 09:15<br>6000 × 4000 · 12 layers</div></div><span class="hash">7be0d44a</span></li>
+              <li><div class="thumb t3"></div><div><div class="v-title">Version 2</div><div class="v-meta">24 Sept 2026 at 17:03<br>6000 × 4000 · 9 layers</div></div><span class="hash">19c6e8f0</span></li>
+              <li><div class="thumb t4"></div><div><div class="v-title">Version 1</div><div class="v-meta">24 Sept 2026 at 16:20<br>6000 × 4000 · 3 layers</div></div><span class="hash">e25d71b3</span></li>
+            </ul>
+            <div class="sheet-foot">
+              <p>Restoring replaces the canvas with that version. It can be undone, and saving adds a new version — nothing in the history is ever lost.</p>
+              <span class="mini">Restore</span>
+            </div>
+          </div>
+        </div>
+        <p class="caption">File ▸ Version History, as built in bCompositor today.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="history">
+    <div class="wrap">
+      <span class="eyebrow">Why bCompositor</span>
+      <h2>Your editor knows how every image was made. Now it can prove it.</h2>
+      <p class="section-lede">A Bitcoin button that inscribes a JPEG isn't a reason to switch editors. These are things only the editor can do, because only the editor saw the work happen.</p>
+      <div class="features">
+        <article class="feature">
+          <span class="status built">Built</span>
+          <h3>Git-style history</h3>
+          <p>Each save becomes a version. Layers that didn't change are stored once, so a 40-layer composite with one edit costs one layer, not a new copy. Restore any version with one undoable step.</p>
+        </article>
+        <article class="feature">
+          <span class="status">Next</span>
+          <h3>Proof of authorship</h3>
+          <p>A signed, timestamped record of the sources, layers and edits behind an image — including whether any AI fill was used. Like Content Credentials, without depending on Adobe’s servers.</p>
+        </article>
+        <article class="feature">
+          <span class="status">Next</span>
+          <h3>Proof you had it first</h3>
+          <p>Each saved version timestamped on Bitcoin (BSV), so if your work is copied you can show your layered original existed earlier. Only hashes go on-chain; your images stay yours.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="links">
+    <div class="wrap split">
+      <div>
+        <span class="eyebrow">Coming next</span>
+        <h2>Share a whole project with one link.</h2>
+        <p class="section-lede">A <code style="font:inherit;font-family:var(--font-mono);color:var(--foreground)">bcomp:</code> link works like a magnet link for a project’s history. Open it to view every version, fork it to start your own branch, or — if the owner lets you — keep editing it together.</p>
+        <p class="section-lede">Edits from two people merge layer by layer: change the sky while they change the face, and both land. Access can be revoked at any time, and every change is signed by the person who made it.</p>
+      </div>
+      <div class="link-card" aria-label="Anatomy of a bcomp link">
+        <div class="uri"><b>bcomp:</b>?<span class="k">xt</span>=urn:bsv:5f1c…e902&amp;<span class="k">ws</span>=https://store…#<span class="k">k</span>=…</div>
+        <ul class="parts">
+          <li><code>xt</code><span>The project’s identity: the Bitcoin transaction that started its history.</span></li>
+          <li><code>ws</code><span>Where the layer files can be fetched. Every file is checked against its hash, so the host doesn’t need to be trusted.</span></li>
+          <li><code>#k</code><span>The read key. It sits after the <code>#</code>, so it never reaches a server.</span></li>
+          <li><code>#w</code><span>Optional edit access, which the owner can revoke.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <span class="eyebrow">A real editor first</span>
+      <h2>Everything you’d use Photoshop for, on your Mac.</h2>
+      <p class="section-lede">bCompositor is built on Compositor, the open-source Mac image editor, and keeps pace with it. You get the full editor before any of the Bitcoin features.</p>
+      <ul class="editor-list">
+        <li><strong>Layers and folders</strong> with blend modes, opacity and drag-and-drop nesting</li>
+        <li><strong>Masks</strong>: layer, clipping and folder masks you can paint, blur and feather</li>
+        <li><strong>Adjustment layers</strong>: Levels, Curves, Hue/Saturation, Exposure, Gradient Map, Grain</li>
+        <li><strong>Non-destructive transforms</strong>, free distort and snapping with guides</li>
+        <li><strong>Selections</strong>: marquee, lasso, Magic Wand, Select Subject</li>
+        <li><strong>Content-Aware Fill</strong>, Spot Healing and Clone Stamp</li>
+        <li><strong>Live layer effects</strong>: stroke, drop shadow, inner shadow, outer glow</li>
+        <li><strong>Editable type and shapes</strong> that stay sharp when scaled</li>
+        <li><strong>Photoshop PSD import</strong>, plus JPEG, PNG, HEIC, TIFF and camera raw</li>
+        <li><strong>Photoshop shortcuts</strong> throughout, remappable</li>
+      </ul>
+      <p class="credit">Compositor is made by Wonder Assembly and released under the MIT licence. bCompositor is an independent edition and opens Compositor projects.</p>
+    </div>
+  </section>
+
+  <section class="block" id="faq">
+    <div class="wrap">
+      <span class="eyebrow">Questions</span>
+      <h2>Good to know</h2>
+      <div class="faq">
+        <details>
+          <summary>What do I need to run it?</summary>
+          <p>A Mac on macOS 26.5 or later. Download the disk image, drag bCompositor to Applications, and it updates itself from then on. It sits happily alongside Compositor and opens Compositor projects.</p>
+        </details>
+        <details>
+          <summary>Is it free?</summary>
+          <p>Yes. The editor and version history are free and open source. Recording versions on Bitcoin will cost a fraction of a cent per save in network fees, and it’s optional.</p>
+        </details>
+        <details>
+          <summary>Do I need a Bitcoin wallet?</summary>
+          <p>No. Editing and version history work without one. For the on-chain features you’ll be able to connect Metanet Desktop or HandCash, and HandCash users get a built-in wallet for anything HandCash can’t hold.</p>
+        </details>
+        <details>
+          <summary>Do my images go on the blockchain?</summary>
+          <p>No — only small fingerprints (hashes) and signatures. Your layers stay on your Mac, and in storage you choose when you share a project. Putting a version fully on-chain will be an option, not the default.</p>
+        </details>
+        <details>
+          <summary>Which Bitcoin?</summary>
+          <p>BSV, where recording data costs a tiny fraction of what it does elsewhere. That is what makes a record of every save practical.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="block closing">
+    <div class="wrap">
+      <h2>Edit freely. Keep every version.</h2>
+      <p class="section-lede">Free for macOS 26.5 and later. Proof of authorship and shareable project links are next on the roadmap.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="/download"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.37 12.62c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.75 2.27-1.6 2.78-.41 6.89 1.15 9.14.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.76-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.39-3.66ZM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.58.67-1.09 1.76-.95 2.8 1.01.08 2.04-.51 2.67-1.28Z"/></svg>Download for Mac</a>
+        <a class="btn btn-ghost" href="https://github.com/b0ase/bCompositor/blob/main/ROADMAP.md">Read the roadmap</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 b0ase · bCompositor is MIT-licensed, built on <a href="https://github.com/robbietilton/Compositor">Compositor</a> by Wonder Assembly.</span>
+    <span><a href="https://github.com/b0ase/bCompositor">GitHub</a> · <a href="https://github.com/b0ase/bCompositor/blob/main/ROADMAP.md">Roadmap</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
